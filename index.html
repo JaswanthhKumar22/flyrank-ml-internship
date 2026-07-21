@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Content Refresh Opportunity Scoring — FlyRank Capstone</title>
+<style>
+  body { max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: Georgia, serif; line-height: 1.6; color: #222; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  .subtitle { color: #555; font-style: italic; margin-top: 0; }
+  h2 { font-size: 20px; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background: #f7f7f7; }
+  code { background: #f4f4f4; padding: 2px 5px; font-family: monospace; font-size: 14px; }
+  img { max-width: 100%; margin: 16px 0; border: 1px solid #ddd; }
+  .note { background: #fff8e6; border-left: 3px solid #e0b400; padding: 10px 14px; font-size: 14px; margin: 16px 0; }
+  ul { padding-left: 22px; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 14px; color: #666; }
+</style>
+</head>
+<body>
+
+<h1>Content Refresh Opportunity Scoring</h1>
+<p class="subtitle">Prioritizing content for editorial review using observable search and engagement signals</p>
+
+<h2>Abstract</h2>
+<p>
+Content teams managing large libraries need a repeatable way to decide which pages deserve review first.
+This project frames that decision as a ranking problem: given search and engagement signals for 30,000
+content items, produce a prioritized queue with reason codes a human reviewer can act on. A rule-based
+baseline score (staleness, visibility, and click-through rate) was built first, then compared against a
+Random Forest classifier trained on the same features and evaluated under both a random split and a
+client-grouped split. Both approaches agreed closely on which items were highest priority, with staleness
+(<code>days_since_last_update</code>) dominating the model's feature importance. The output is a ranked
+action queue with reason codes, intended strictly as decision support for human reviewers — not as an
+automated publishing or ranking-prediction system.
+</p>
+
+<h2>Introduction</h2>
+<p>
+The decision this work supports is: <strong>which content pages should be prioritized for review and
+potential refresh</strong>, based on their search performance, engagement, and content freshness. The
+ranked recommendations are intended for content managers, SEO specialists, or digital marketing teams,
+who use them to decide whether to refresh, expand, rewrite, monitor, or leave a page unchanged.
+</p>
+<p>
+Getting this wrong has asymmetric costs. A <strong>false positive</strong> — flagging a healthy page for
+review — wastes reviewer time. A <strong>false negative</strong> — missing a page that is genuinely
+declining — lets traffic and engagement erode further before anyone intervenes. Because impressions, clicks,
+CTR, average position, content age, and engagement interact in ways that are hard to capture in a single
+fixed rule, this project explores whether a learned model can rank pages more effectively than a manual
+rule — while keeping a human in the loop for every action.
+</p>
+
+<h2>Data</h2>
+<p>
+The analysis uses an anonymized content-performance dataset of <strong>30,000 content items</strong> across
+<strong>44 features</strong>, covering search volume, competition, content type, word/character counts,
+90-day impressions, clicks, sessions, engagement rate, content age, freshness, click-through rate, average
+search position, and trend direction. One row represents one content item.
+</p>
+<p>
+Descriptive figures from the initial data pull:
+</p>
+<ul>
+  <li>Content age ranged from 90 to 564 days, with a median of 236 days.</li>
+  <li>90-day impressions were highly skewed — median of 731, but a long tail up to 517,715.</li>
+  <li>Trend direction was mostly <code>down</code> (16,262 items), followed by <code>stable</code> (5,962),
+  <code>up</code> (4,388), <code>new</code> (2,236), and <code>flat</code> (1,152).</li>
+</ul>
+<p>
+<strong>Excluded from features:</strong> <code>client_id</code> and <code>content_id</code> (identifiers
+only), and <code>trend_direction</code> / <code>trend_pct</code> (excluded due to leakage risk — these
+fields are derived in a way that could reflect information not available at prediction time; see Leakage
+Audit below).
+</p>
+<p>
+No client names, domains, URLs, or private query data appear anywhere in this analysis or in the underlying
+repository, per the dataset's public-use terms.
+</p>
+
+<h2>Methodology</h2>
+<h3>Baseline rule</h3>
+<p>
+The baseline scores each item using three binary signals:
+</p>
+<ul>
+  <li><strong>Stale</strong>: <code>days_since_last_update &gt;= 180</code></li>
+  <li><strong>Visible</strong>: <code>impressions_90d &gt;= 500</code></li>
+  <li><strong>Low CTR</strong>: <code>ctr &lt; 1</code></li>
+</ul>
+<p>
+<code>baseline_score = 40×stale + 30×visible + 30×low_ctr</code>, producing a 0–100 score with reason
+codes <code>STALE_LOWCTR</code>, <code>STALE_VISIBLE</code>, <code>LOWCTR_VISIBLE</code>, and
+<code>REVIEW_PRIORITY</code> as a default.
+</p>
+
+<h3>Model</h3>
+<p>
+A Random Forest classifier was trained on three features — <code>days_since_last_update</code>,
+<code>impressions_90d</code>, and <code>ctr</code> — to predict a <code>high_priority</code> label
+(<code>baseline_score &gt;= 70</code>). This lets the model be compared directly against the rule it was
+trained to approximate, using an 80/20 split with a fixed random seed (42) for reproducibility.
+</p>
+
+<h3>Validation design</h3>
+<p>
+Because multiple content items can share a client, a plain random split risks leaking information about a
+client's typical behavior between train and test sets. The model was therefore re-evaluated under a
+<strong>client-grouped split</strong> (<code>GroupShuffleSplit</code> on <code>client_id</code>), so that
+no client appears in both the training and test partitions.
+</p>
+
+<h3>Leakage audit</h3>
+<table>
+<tr><th>Feature</th><th>Used</th><th>Risk</th><th>Reason</th></tr>
+<tr><td>days_since_last_update</td><td>Yes</td><td>Low</td><td>Available before prediction</td></tr>
+<tr><td>impressions_90d</td><td>Yes</td><td>Low</td><td>Historical metric</td></tr>
+<tr><td>ctr</td><td>Yes</td><td>Low</td><td>Historical metric</td></tr>
+<tr><td>client_id / content_id</td><td>No</td><td>Not used</td><td>Identifiers only</td></tr>
+<tr><td>trend_direction / trend_pct</td><td>No</td><td>High</td><td>May contain future trend information</td></tr>
+</table>
+
+<h2>Results</h2>
+<table>
+<tr><th>Method</th><th>Description</th><th>Accuracy</th></tr>
+<tr><td>Rule baseline (Week 4)</td><td>Manual scoring rule</td><td>N/A (not a predictive model)</td></tr>
+<tr><td>Random Forest — random split</td><td>Learned model</td><td>1.00</td></tr>
+<tr><td>Random Forest — client-grouped split</td><td>Learned model</td><td>1.00</td></tr>
+</table>
+
+<div class="note">
+<strong>Honest caveat:</strong> the <code>high_priority</code> target was derived directly from the same
+rule (<code>baseline_score</code>) used to build the model's input features. The near-perfect accuracy
+reflects the model successfully recovering a deterministic rule from its own inputs — it is not evidence
+that the model predicts an independent, real-world outcome. This is a demonstration that a learned model
+can reproduce and generalize a scoring rule across a client-grouped split, not a claim of predictive power
+beyond that rule.
+</div>
+
+<p>Feature importances from the Random Forest:</p>
+<table>
+<tr><th>Feature</th><th>Importance</th></tr>
+<tr><td>days_since_last_update</td><td>0.867</td></tr>
+<tr><td>ctr</td><td>0.105</td></tr>
+<tr><td>impressions_90d</td><td>0.028</td></tr>
+</table>
+<p>
+Content staleness dominates the model's decisions, consistent with its 40-point weight in the manual
+baseline rule. Errors, where they occurred, clustered near the decision boundary (scores close to 70),
+where the underlying signals were less distinct.
+</p>
+
+<p>Distribution of recommended actions across the full dataset:</p>
+<img src="work/figures/action_distribution.png" alt="Bar chart showing counts of content items assigned to Refresh Content, Review Content, and Monitor actions">
+
+<h2>Limitations &amp; honest framing</h2>
+<p>
+This analysis identifies <strong>observed patterns</strong>, not causal relationships. A high refresh
+score does not guarantee that updating a page will improve its performance. The results should be used as
+<strong>decision support</strong> alongside human review — never as an automated publishing, deletion, or
+metadata-change trigger. This work does not claim to identify Google ranking factors, does not predict
+future search performance, and does not establish that refreshing content causes performance gains.
+</p>
+<p>
+Additional limits:
+</p>
+<ul>
+  <li>The evaluation window covers a single dataset snapshot; seasonal or temporary effects are not
+  separated out.</li>
+  <li>The <code>high_priority</code> label is a proxy derived from the baseline rule, not an independent
+  outcome measure (see Results note above).</li>
+  <li>Missing values in fields like <code>word_count</code> were not imputed or modeled explicitly.</li>
+  <li>Recommendations reflect the state of the data at pull time; recently updated content may not yet be
+  reflected.</li>
+</ul>
+
+<h2>Ranked recommendations</h2>
+<p>
+The action playbook maps <code>baseline_score</code> to three tiers:
+</p>
+<table>
+<tr><th>Score</th><th>Action</th></tr>
+<tr><td>≥ 70</td><td>Refresh Content</td></tr>
+<tr><td>40–69</td><td>Review Content</td></tr>
+<tr><td>&lt; 40</td><td>Monitor</td></tr>
+</table>
+<p>
+Each item also carries a reason code (<code>Stale Content</code>, <code>Low CTR</code>,
+<code>Stale + High Impressions + Low CTR</code>, or <code>Healthy Performance</code>) so reviewers can see
+<em>why</em> an item was flagged, not just that it was.
+</p>
+
+<h3>Human review checklist</h3>
+<p>Before acting on any recommendation, a reviewer should verify:</p>
+<ul>
+  <li>Search intent still matches the topic.</li>
+  <li>Content is factually accurate.</li>
+  <li>Recent business priorities are considered.</li>
+  <li>Important pages are not removed accidentally.</li>
+</ul>
+
+<h3>No-go list — never automated</h3>
+<ul>
+  <li>Publishing new content</li>
+  <li>Deleting pages</li>
+  <li>Rewriting content</li>
+  <li>Changing SEO metadata</li>
+  <li>Making business decisions without human approval</li>
+</ul>
+
+<h3>Monitoring / retrain triggers</h3>
+<p>The scoring system should be revisited if:</p>
+<ul>
+  <li>CTR changes substantially across the portfolio.</li>
+  <li>Search rankings shift materially.</li>
+  <li>New content types are introduced.</li>
+  <li>Model performance on fresh data decreases.</li>
+  <li>Business priorities change.</li>
+</ul>
+
+<h2>Reproducibility</h2>
+<p>
+All notebooks (research question, ML task framing, data contract, baseline scoring, modeling, validation
+audit, and action playbook) are available in the project repository:
+<a href="https://github.com/JaswanthhKumar22/flyrank-ml-internship">github.com/JaswanthhKumar22/flyrank-ml-internship</a>,
+under <code>work/notebooks/</code>.
+</p>
+
+<footer>
+<p>Built on the FlyRank ML Internship dataset — <a href="https://flyrank.ai">flyrank.ai</a></p>
+</footer>
+
+</body>
+</html>
