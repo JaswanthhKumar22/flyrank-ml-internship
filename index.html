@@ -2,234 +2,864 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Content Refresh Opportunity Scoring — FlyRank Capstone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Refresh Opportunity Scoring — FlyRank ML Internship Capstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  body { max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: Georgia, serif; line-height: 1.6; color: #222; }
-  h1 { font-size: 28px; margin-bottom: 4px; }
-  .subtitle { color: #555; font-style: italic; margin-top: 0; }
-  h2 { font-size: 20px; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background: #f7f7f7; }
-  code { background: #f4f4f4; padding: 2px 5px; font-family: monospace; font-size: 14px; }
-  img { max-width: 100%; margin: 16px 0; border: 1px solid #ddd; }
-  .note { background: #fff8e6; border-left: 3px solid #e0b400; padding: 10px 14px; font-size: 14px; margin: 16px 0; }
-  ul { padding-left: 22px; }
-  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 14px; color: #666; }
+  :root{
+    --paper:#F5F6F3;
+    --paper-raised:#FFFFFF;
+    --ink:#1B2321;
+    --ink-soft:#4B534F;
+    --rule:#DAD8D0;
+    --accent:#1F5D56;      /* deep teal — primary */
+    --accent-soft:#E4EEEC;
+    --caution:#9C5A24;     /* burnt ochre — caution/flag */
+    --caution-soft:#F5E9DC;
+    --observed:#3B6E4F;    /* sage — "observed / decision-support" tag */
+    --observed-soft:#E7EFE9;
+    --danger:#8C3B32;
+    --danger-soft:#F3E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", sans-serif;
+    font-size:16.5px;
+    line-height:1.65;
+  }
+  .sheet{
+    max-width:780px;
+    margin:0 auto;
+    padding:64px 28px 100px;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    font-size:12px;
+    color:var(--accent);
+    font-weight:600;
+  }
+  h1.title{
+    font-family:"Source Serif 4", serif;
+    font-size:40px;
+    line-height:1.15;
+    font-weight:700;
+    margin:10px 0 6px;
+    color:var(--ink);
+  }
+  p.subtitle{
+    font-family:"Source Serif 4", serif;
+    font-style:italic;
+    font-size:19px;
+    color:var(--ink-soft);
+    margin:0 0 28px;
+  }
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 22px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    border-top:1px solid var(--rule);
+    border-bottom:1px solid var(--rule);
+    padding:12px 0;
+    margin-bottom:34px;
+  }
+  .meta-row span b{color:var(--ink); font-weight:600;}
+
+  /* stat strip — signature-adjacent, but functional */
+  .stat-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--rule);
+    border:1px solid var(--rule);
+    margin:0 0 40px;
+  }
+  .stat{
+    background:var(--paper-raised);
+    padding:16px 14px;
+    text-align:left;
+  }
+  .stat .num{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:22px;
+    font-weight:600;
+    color:var(--accent);
+    display:block;
+  }
+  .stat .lab{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-top:2px;
+    display:block;
+  }
+  @media (max-width:640px){ .stat-strip{grid-template-columns:repeat(2,1fr);} }
+
+  /* epistemic tags — THE signature element. every load-bearing claim in this
+     paper carries one of these, echoing the internship's own "careful words"
+     rubric (observed / directional / decision-support / caution). */
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    padding:2px 8px 2px 7px;
+    border-radius:3px;
+    white-space:nowrap;
+    vertical-align:1px;
+    border-left:3px solid transparent;
+  }
+  .tag-observed{ background:var(--observed-soft); color:var(--observed); border-left-color:var(--observed);}
+  .tag-caution{ background:var(--caution-soft); color:var(--caution); border-left-color:var(--caution);}
+  .tag-support{ background:var(--accent-soft); color:var(--accent); border-left-color:var(--accent);}
+  .tag-audit{ background:var(--danger-soft); color:var(--danger); border-left-color:var(--danger);}
+
+  nav.toc{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    padding:20px 24px;
+    margin:0 0 44px;
+  }
+  nav.toc .eyebrow{margin-bottom:10px; display:block;}
+  nav.toc ol{
+    columns:2;
+    -webkit-columns:2;
+    margin:0; padding-left:20px;
+    font-size:14.5px;
+  }
+  nav.toc li{margin-bottom:7px;}
+  nav.toc a{color:var(--ink); text-decoration:none; border-bottom:1px dotted var(--rule);}
+  nav.toc a:hover{color:var(--accent); border-bottom-color:var(--accent);}
+  @media (max-width:640px){ nav.toc ol{columns:1;} }
+
+  h2{
+    font-family:"Source Serif 4", serif;
+    font-size:25px;
+    font-weight:700;
+    margin:56px 0 4px;
+    padding-bottom:10px;
+    border-bottom:2px solid var(--ink);
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  h2 .n{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:15px;
+    color:var(--accent);
+    font-weight:600;
+  }
+  h3{
+    font-family:"Source Serif 4", serif;
+    font-size:18.5px;
+    font-weight:600;
+    margin:30px 0 4px;
+    color:var(--ink);
+  }
+  h3 .n{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); font-weight:500;}
+
+  p{margin:12px 0;}
+  ul, ol{padding-left:22px;}
+  li{margin:5px 0;}
+  code, .mono{font-family:"IBM Plex Mono", monospace; font-size:0.92em; background:#EDECE6; padding:1px 5px; border-radius:3px;}
+
+  table{
+    border-collapse:collapse;
+    width:100%;
+    margin:18px 0 22px;
+    font-size:14.5px;
+    background:var(--paper-raised);
+  }
+  caption{
+    text-align:left;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  th, td{
+    border:1px solid var(--rule);
+    padding:9px 12px;
+    text-align:left;
+    vertical-align:top;
+  }
+  th{
+    background:var(--ink);
+    color:#F5F6F3;
+    font-weight:500;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  tr:nth-child(even) td{ background:#FAFAF8; }
+  td.num, th.num{ font-family:"IBM Plex Mono", monospace; text-align:right; }
+
+  .callout{
+    border:1px solid var(--rule);
+    border-left:4px solid var(--accent);
+    background:var(--accent-soft);
+    padding:16px 20px;
+    margin:20px 0;
+    font-size:15px;
+  }
+  .callout.flag{ border-left-color:var(--caution); background:var(--caution-soft); }
+  .callout.audit{ border-left-color:var(--danger); background:var(--danger-soft); }
+  .callout .head{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    display:block;
+  }
+  .callout.flag .head{ color:var(--caution); }
+  .callout.audit .head{ color:var(--danger); }
+  .callout:not(.flag):not(.audit) .head{ color:var(--accent); }
+
+  figure{ margin:22px 0; }
+  figcaption{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:8px;
+  }
+  figure svg{ width:100%; height:auto; display:block; background:var(--paper-raised); border:1px solid var(--rule);}
+
+  .weekgrid{ display:grid; gap:0; border:1px solid var(--rule); }
+  .weekrow{ display:grid; grid-template-columns:64px 150px 1fr; border-top:1px solid var(--rule); }
+  .weekrow:first-child{ border-top:none; }
+  .weekrow > div{ padding:10px 14px; font-size:14px; }
+  .weekrow .wk{ font-family:"IBM Plex Mono", monospace; font-weight:600; color:var(--accent); background:var(--paper-raised); }
+  .weekrow .name{ font-weight:600; background:var(--paper-raised); }
+  .weekrow .desc{ background:#FAFAF8; color:var(--ink-soft); }
+  @media (max-width:640px){ .weekrow{grid-template-columns:48px 1fr;} .weekrow .desc{grid-column:1 / -1;} }
+
+  a{ color:var(--accent); }
+  hr.div{ border:none; border-top:1px solid var(--rule); margin:52px 0 40px; }
+  footer{
+    margin-top:60px;
+    padding-top:22px;
+    border-top:2px solid var(--ink);
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  .print-note{ display:none; }
+  @media print{
+    body{background:#fff;}
+    .stat-strip, nav.toc{ break-inside:avoid; }
+    h2{ break-after:avoid; }
+  }
 </style>
 </head>
 <body>
+<div class="sheet">
 
-<h1>Content Refresh Opportunity Scoring</h1>
-<p class="subtitle">Prioritizing content for editorial review using observable search and engagement signals</p>
+  <span class="eyebrow">FlyRank ML Internship — Capstone Research Paper — Lane 2</span>
+  <h1 class="title">Content Refresh Opportunity Scoring</h1>
+  <p class="subtitle">A ranking-based decision-support system for prioritizing editorial review across a 30,000-item content portfolio</p>
 
-<h2>Abstract</h2>
-<p>
-Content teams managing large libraries need a repeatable way to decide which pages deserve review first.
-This project frames that decision as a ranking problem: given search and engagement signals for 30,000
-content items, produce a prioritized queue with reason codes a human reviewer can act on. A rule-based
-baseline score (staleness, visibility, and click-through rate) was built first, then compared against a
-Random Forest classifier trained on the same features and evaluated under both a random split and a
-client-grouped split. Both approaches agreed closely on which items were highest priority, with staleness
-(<code>days_since_last_update</code>) dominating the model's feature importance. The output is a ranked
-action queue with reason codes, intended strictly as decision support for human reviewers — not as an
-automated publishing or ranking-prediction system.
-</p>
+  <div class="meta-row">
+    <span>Author: <b>[Your Name]</b></span>
+    <span>Program: <b>FlyRank ML Internship</b></span>
+    <span>Date: <b>July 2026</b></span>
+    <span>Repo: <b><a href="https://github.com/JaswanthhKumar22/flyrank-ml-internship">flyrank-ml-internship</a></b></span>
+    <span>Status: <b>Decision-support prototype, not production</b></span>
+  </div>
 
-<h2>Introduction</h2>
-<p>
-The decision this work supports is: <strong>which content pages should be prioritized for review and
-potential refresh</strong>, based on their search performance, engagement, and content freshness. The
-ranked recommendations are intended for content managers, SEO specialists, or digital marketing teams,
-who use them to decide whether to refresh, expand, rewrite, monitor, or leave a page unchanged.
-</p>
-<p>
-Getting this wrong has asymmetric costs. A <strong>false positive</strong> — flagging a healthy page for
-review — wastes reviewer time. A <strong>false negative</strong> — missing a page that is genuinely
-declining — lets traffic and engagement erode further before anyone intervenes. Because impressions, clicks,
-CTR, average position, content age, and engagement interact in ways that are hard to capture in a single
-fixed rule, this project explores whether a learned model can rank pages more effectively than a manual
-rule — while keeping a human in the loop for every action.
-</p>
+  <div class="stat-strip">
+    <div class="stat"><span class="num">30,000</span><span class="lab">Content items scored</span></div>
+    <div class="stat"><span class="num">44</span><span class="lab">Raw features available</span></div>
+    <div class="stat"><span class="num">3</span><span class="lab">Features used in the model</span></div>
+    <div class="stat"><span class="num">1.00*</span><span class="lab">Test accuracy (see §5.2 caveat)</span></div>
+  </div>
 
-<h2>Data</h2>
-<p>
-The analysis uses an anonymized content-performance dataset of <strong>30,000 content items</strong> across
-<strong>44 features</strong>, covering search volume, competition, content type, word/character counts,
-90-day impressions, clicks, sessions, engagement rate, content age, freshness, click-through rate, average
-search position, and trend direction. One row represents one content item.
-</p>
-<p>
-Descriptive figures from the initial data pull:
-</p>
-<ul>
-  <li>Content age ranged from 90 to 564 days, with a median of 236 days.</li>
-  <li>90-day impressions were highly skewed — median of 731, but a long tail up to 517,715.</li>
-  <li>Trend direction was mostly <code>down</code> (16,262 items), followed by <code>stable</code> (5,962),
-  <code>up</code> (4,388), <code>new</code> (2,236), and <code>flat</code> (1,152).</li>
-</ul>
-<p>
-<strong>Excluded from features:</strong> <code>client_id</code> and <code>content_id</code> (identifiers
-only), and <code>trend_direction</code> / <code>trend_pct</code> (excluded due to leakage risk — these
-fields are derived in a way that could reflect information not available at prediction time; see Leakage
-Audit below).
-</p>
-<p>
-No client names, domains, URLs, or private query data appear anywhere in this analysis or in the underlying
-repository, per the dataset's public-use terms.
-</p>
+  <h2 style="margin-top:0; border-bottom:none; padding-bottom:0;">Abstract</h2>
+  <p>
+  Content teams managing large libraries need a repeatable way to decide which pages deserve editorial
+  attention first. This project frames that decision as a scoring and ranking problem over a
+  30,000-item, 44-feature content portfolio. A transparent, rule-based baseline
+  <span class="tag tag-support">DECISION-SUPPORT</span> was built first — weighting staleness, search
+  visibility, and click-through rate — and a Random Forest classifier was then trained to reproduce and
+  generalize that rule, evaluated under both a random split and a client-grouped split to guard against
+  information leakage between related content items. The two validation strategies agreed
+  <span class="tag tag-observed">OBSERVED</span>, and <code>days_since_last_update</code> dominated the
+  model's decisions, consistent with the manual rule's own weighting. The near-perfect accuracy reported
+  in §5 reflects the model recovering a deterministic rule rather than predicting an independent outcome
+  <span class="tag tag-caution">CAUTION</span> — a limitation disclosed in full in §7. The deliverable is
+  a ranked action queue with human-readable reason codes, intended strictly as decision support for
+  content reviewers, never as an automated publishing or deletion trigger.
+  </p>
 
-<h2>Methodology</h2>
-<h3>Baseline rule</h3>
-<p>
-The baseline scores each item using three binary signals:
-</p>
-<ul>
-  <li><strong>Stale</strong>: <code>days_since_last_update &gt;= 180</code></li>
-  <li><strong>Visible</strong>: <code>impressions_90d &gt;= 500</code></li>
-  <li><strong>Low CTR</strong>: <code>ctr &lt; 1</code></li>
-</ul>
-<p>
-<code>baseline_score = 40×stale + 30×visible + 30×low_ctr</code>, producing a 0–100 score with reason
-codes <code>STALE_LOWCTR</code>, <code>STALE_VISIBLE</code>, <code>LOWCTR_VISIBLE</code>, and
-<code>REVIEW_PRIORITY</code> as a default.
-</p>
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><a href="#intro">1. Introduction</a></li>
+      <li><a href="#scope">2. Problem Formulation &amp; Scope Evolution</a></li>
+      <li><a href="#data">3. Data</a></li>
+      <li><a href="#method">4. Methodology</a></li>
+      <li><a href="#results">5. Results</a></li>
+      <li><a href="#leakage">6. Leakage Audit</a></li>
+      <li><a href="#limits">7. Limitations &amp; Honest Framing</a></li>
+      <li><a href="#playbook">8. Action Playbook</a></li>
+      <li><a href="#log">9. Weekly Development Log</a></li>
+      <li><a href="#repro">10. Reproducibility</a></li>
+      <li><a href="#ethics">11. Data Ethics &amp; Use</a></li>
+      <li><a href="#conclusion">12. Conclusion</a></li>
+      <li><a href="#appendix-a">Appendix A — Feature Dictionary</a></li>
+      <li><a href="#appendix-b">Appendix B — Environment</a></li>
+    </ol>
+  </nav>
 
-<h3>Model</h3>
-<p>
-A Random Forest classifier was trained on three features — <code>days_since_last_update</code>,
-<code>impressions_90d</code>, and <code>ctr</code> — to predict a <code>high_priority</code> label
-(<code>baseline_score &gt;= 70</code>). This lets the model be compared directly against the rule it was
-trained to approximate, using an 80/20 split with a fixed random seed (42) for reproducibility.
-</p>
+  <!-- 1. INTRODUCTION -->
+  <h2 id="intro"><span class="n">1</span> Introduction</h2>
+  <p>
+  <strong>The decision.</strong> This work supports a single, concrete decision: which content pages
+  should be prioritized for review and potential refresh, based on their search performance, engagement,
+  and content freshness. It does not decide <em>what</em> to change on a page — only which pages are worth
+  a human's time to look at first.
+  </p>
+  <p>
+  <strong>Who acts on it.</strong> The ranked recommendations are built for content managers, SEO
+  specialists, and digital marketing teams, who use them to decide whether to refresh, expand, rewrite,
+  monitor, or leave a page unchanged.
+  </p>
+  <p>
+  <strong>The cost of a wrong call.</strong> The two failure modes are asymmetric. A <em>false positive</em>
+  — flagging a healthy page for review — wastes a reviewer's time and erodes trust in the tool. A
+  <em>false negative</em> — missing a page that is genuinely declining — lets traffic and engagement erode
+  further before anyone intervenes, and is harder to recover from. That asymmetry is why every
+  recommendation in this system ships with a reason code rather than a bare score: a reviewer needs to
+  see <em>why</em> a page was flagged in order to catch the false positives quickly.
+  </p>
+  <p>
+  <strong>Why not a fixed rule alone?</strong> Search visibility, engagement, click-through rate, average
+  position, and content age interact in ways that are difficult to fully capture in a single hand-written
+  rule. A learned model can, in principle, combine these signals more effectively than a fixed threshold —
+  while still keeping a human reviewer in the loop for every action. Section 2 explains precisely how far
+  this project got toward that goal, and where the final system still leans on the simpler rule.
+  </p>
 
-<h3>Validation design</h3>
-<p>
-Because multiple content items can share a client, a plain random split risks leaking information about a
-client's typical behavior between train and test sets. The model was therefore re-evaluated under a
-<strong>client-grouped split</strong> (<code>GroupShuffleSplit</code> on <code>client_id</code>), so that
-no client appears in both the training and test partitions.
-</p>
+  <!-- 2. SCOPE -->
+  <h2 id="scope"><span class="n">2</span> Problem Formulation &amp; Scope Evolution</h2>
+  <p>
+  This project's framing changed over the course of the internship, and this paper reports that evolution
+  honestly rather than smoothing it over.
+  </p>
+  <h3><span class="n">2.1</span> Original framing</h3>
+  <p>
+  The task was initially framed as a <strong>ranking</strong> problem <span class="tag tag-support">DECISION-SUPPORT</span>:
+  produce an ordering of content items by predicted engagement, with <strong>Normalized Discounted
+  Cumulative Gain (NDCG)</strong> proposed as the success metric, since NDCG rewards placing the truly
+  important items near the top of a ranked list rather than merely classifying items correctly in isolation.
+  </p>
+  <h3><span class="n">2.2</span> What was actually built</h3>
+  <p>
+  In practice, the final pipeline (Weeks 4–7) implements a simpler and more auditable design: a
+  <strong>rule-based priority score</strong> (0–100) that converts directly into three action tiers, and a
+  <strong>binary classifier</strong> trained to reproduce that rule's <code>high_priority</code> label. No
+  NDCG evaluation was ultimately run. This is a narrower deliverable than the Week 2 framing proposed,
+  and it is reported here as a limitation rather than glossed over
+  <span class="tag tag-caution">CAUTION</span> — see §7 for the full discussion. The upside of the
+  narrower path is a fully transparent, reason-coded output that a non-technical reviewer can sanity-check
+  line by line, which was judged more valuable for an editorial workflow than an opaque top-<em>k</em>
+  ranking.
+  </p>
+  <h3><span class="n">2.3</span> Target definition</h3>
+  <p>
+  The working target, <code>high_priority</code>, is a proxy: it is <em>defined</em> from the rule
+  (<code>baseline_score &ge; 70</code>), not observed from an independent outcome such as a subsequent
+  traffic lift after refresh. This distinction matters throughout the rest of the paper and is revisited
+  directly in the Results and Limitations sections.
+  </p>
 
-<h3>Leakage audit</h3>
-<table>
-<tr><th>Feature</th><th>Used</th><th>Risk</th><th>Reason</th></tr>
-<tr><td>days_since_last_update</td><td>Yes</td><td>Low</td><td>Available before prediction</td></tr>
-<tr><td>impressions_90d</td><td>Yes</td><td>Low</td><td>Historical metric</td></tr>
-<tr><td>ctr</td><td>Yes</td><td>Low</td><td>Historical metric</td></tr>
-<tr><td>client_id / content_id</td><td>No</td><td>Not used</td><td>Identifiers only</td></tr>
-<tr><td>trend_direction / trend_pct</td><td>No</td><td>High</td><td>May contain future trend information</td></tr>
-</table>
+  <!-- 3. DATA -->
+  <h2 id="data"><span class="n">3</span> Data</h2>
+  <h3><span class="n">3.1</span> Two distinct data assets</h3>
+  <p>
+  The project drew on two separate data assets, and keeping them distinct is itself a finding worth
+  recording:
+  </p>
+  <table>
+    <caption>Table 1 — Data assets used across the internship</caption>
+    <tr><th>Asset</th><th>Grain</th><th>Size</th><th>Used in</th></tr>
+    <tr>
+      <td><strong>Raw daily performance warehouse</strong><br><span class="mono">fact_content_daily_performance_sample.parquet</span></td>
+      <td>One row per content item, per client, per report date</td>
+      <td class="num">11,694,072 rows<br>2026-06-01 to 2026-06-30</td>
+      <td>Week 3 — Data Contract exercise</td>
+    </tr>
+    <tr>
+      <td><strong>Anonymized content-level snapshot</strong><br><span class="mono">content_refresh_anonymized.csv</span></td>
+      <td>One row per content item (portfolio snapshot)</td>
+      <td class="num">30,000 rows × 44 columns</td>
+      <td>Weeks 1, 4, 5, 6, 7 — scoring, modeling, validation, playbook</td>
+    </tr>
+  </table>
+  <p>
+  The Week 3 data contract was written against the raw daily warehouse table, while all downstream modeling
+  work (Weeks 4–7) runs on the separate anonymized snapshot. The two were never joined or reconciled
+  within this project <span class="tag tag-caution">CAUTION</span> — the contract exercise served to
+  practice grain verification and leakage discipline on the richer source, and those same disciplines were
+  then re-applied, by hand, to the simpler modeling dataset. This gap is listed formally in §7.
+  </p>
 
-<h2>Results</h2>
-<table>
-<tr><th>Method</th><th>Description</th><th>Accuracy</th></tr>
-<tr><td>Rule baseline (Week 4)</td><td>Manual scoring rule</td><td>N/A (not a predictive model)</td></tr>
-<tr><td>Random Forest — random split</td><td>Learned model</td><td>1.00</td></tr>
-<tr><td>Random Forest — client-grouped split</td><td>Learned model</td><td>1.00</td></tr>
-</table>
+  <h3><span class="n">3.2</span> Verifying the data contract's own claims</h3>
+  <p>
+  The Week 3 contract initially stated that <em>"one row represents one search query for one landing page
+  on one day."</em> Checking that claim against the actual schema (<code>DESCRIBE</code> output) shows
+  no query-level column in the table at all — the real grain is one row per
+  <strong>content item, per client, per report date</strong>. That correction is recorded here rather than
+  left in the original notebook <span class="tag tag-audit">AUDIT FINDING</span>.
+  </p>
+  <p>
+  A second check — grouping by <code>report_date</code>, <code>client_hash_id</code>, and
+  <code>content_hash_id</code> and counting rows — surfaced duplicate rows for the same key on at least
+  one date (<code>2026-06-13</code>), which contradicts a one-row-per-key assumption and would need to be
+  resolved (deduplicated or explained) before this table could be trusted for production aggregation
+  <span class="tag tag-audit">AUDIT FINDING</span>. Of the 11.69M rows, only
+  <strong>554,216</strong> (4.7%) had both Google Search Console and GA4 data simultaneously available,
+  which is the effective usable sample size for any cross-source feature.
+  </p>
 
-<div class="note">
-<strong>Honest caveat:</strong> the <code>high_priority</code> target was derived directly from the same
-rule (<code>baseline_score</code>) used to build the model's input features. The near-perfect accuracy
-reflects the model successfully recovering a deterministic rule from its own inputs — it is not evidence
-that the model predicts an independent, real-world outcome. This is a demonstration that a learned model
-can reproduce and generalize a scoring rule across a client-grouped split, not a claim of predictive power
-beyond that rule.
+  <h3><span class="n">3.3</span> Descriptive statistics — modeling dataset</h3>
+  <p>The 30,000-row snapshot that all downstream scoring and modeling use:</p>
+  <table>
+    <caption>Table 2 — Five-number summaries (modeling dataset, n = 30,000)</caption>
+    <tr><th>Field</th><th class="num">Min</th><th class="num">Q1</th><th class="num">Median</th><th class="num">Q3</th><th class="num">Max</th><th class="num">Mean</th></tr>
+    <tr><td>content_age_days</td><td class="num">90</td><td class="num">132</td><td class="num">236</td><td class="num">333</td><td class="num">564</td><td class="num">256.2</td></tr>
+    <tr><td>impressions_90d</td><td class="num">1</td><td class="num">81</td><td class="num">731</td><td class="num">3,615</td><td class="num">517,715</td><td class="num">5,200.4</td></tr>
+  </table>
+
+  <figure>
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+      <text x="16" y="24" font-size="12" fill="#4B534F">CONTENT_AGE_DAYS — distribution shape (n = 30,000)</text>
+      <line x1="60" y1="90" x2="660" y2="90" stroke="#DAD8D0" stroke-width="1"/>
+      <!-- scale: 90 -> 564 mapped to 60 -> 660 -->
+      <!-- box from Q1(132) to Q3(333), median line at 236 -->
+      <rect x="82.5" y="68" width="205" height="44" fill="#E4EEEC" stroke="#1F5D56" stroke-width="1.5"/>
+      <line x1="180" y1="68" x2="180" y2="112" stroke="#1F5D56" stroke-width="2.5"/>
+      <line x1="60" y1="90" x2="82.5" y2="90" stroke="#1F5D56" stroke-width="1.5"/>
+      <line x1="287.5" y1="90" x2="660" y2="90" stroke="#1F5D56" stroke-width="1.5"/>
+      <line x1="60" y1="75" x2="60" y2="105" stroke="#1F5D56" stroke-width="1.5"/>
+      <line x1="660" y1="75" x2="660" y2="105" stroke="#1F5D56" stroke-width="1.5"/>
+      <text x="60" y="128" font-size="11" fill="#1B2321" text-anchor="middle">90</text>
+      <text x="82.5" y="128" font-size="11" fill="#1B2321" text-anchor="middle">132</text>
+      <text x="180" y="140" font-size="11" fill="#1F5D56" text-anchor="middle" font-weight="600">236 (median)</text>
+      <text x="287.5" y="128" font-size="11" fill="#1B2321" text-anchor="middle">333</text>
+      <text x="660" y="128" font-size="11" fill="#1B2321" text-anchor="middle">564</text>
+      <text x="360" y="24" font-size="11" fill="#4B534F" text-anchor="middle">days since content was first published</text>
+    </svg>
+    <figcaption>Fig. 1 — Box summary of content_age_days built directly from the reported five-number summary. Half of all content is between 132 and 333 days old.</figcaption>
+  </figure>
+
+  <p>
+  <code>impressions_90d</code> is far more skewed: the median item receives 731 impressions in 90 days,
+  but the mean is pulled up to 5,200 by a long tail topping out at 517,715 — a small number of very
+  high-traffic pages sit alongside a large body of low-traffic ones. Any threshold-based rule on this
+  field (see §4.1) is therefore working against a heavy-tailed distribution, not a roughly symmetric one.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+      <text x="16" y="22" font-size="12" fill="#4B534F">TREND_DIRECTION — item counts (n = 30,000)</text>
+      <!-- bars: down 16262, stable 5962, up 4388, new 2236, flat 1152 ; max 16262 -> scale to 500px -->
+      <g font-size="12" fill="#1B2321">
+        <text x="10" y="52" text-anchor="start">down</text>
+        <rect x="90" y="40" width="500" height="20" fill="#8C3B32"/>
+        <text x="600" y="55" fill="#4B534F">16,262</text>
+
+        <text x="10" y="82" text-anchor="start">stable</text>
+        <rect x="90" y="70" width="183.4" height="20" fill="#1F5D56"/>
+        <text x="283" y="85" fill="#4B534F">5,962</text>
+
+        <text x="10" y="112" text-anchor="start">up</text>
+        <rect x="90" y="100" width="135" height="20" fill="#3B6E4F"/>
+        <text x="235" y="115" fill="#4B534F">4,388</text>
+
+        <text x="10" y="142" text-anchor="start">new</text>
+        <rect x="90" y="130" width="68.8" height="20" fill="#9C5A24"/>
+        <text x="168" y="145" fill="#4B534F">2,236</text>
+
+        <text x="10" y="172" text-anchor="start">flat</text>
+        <rect x="90" y="160" width="35.4" height="20" fill="#B7B4AA"/>
+        <text x="135" y="175" fill="#4B534F">1,152</text>
+      </g>
+      <text x="360" y="205" font-size="11" fill="#4B534F" text-anchor="middle">54% of the portfolio is trending down — the largest single segment by far</text>
+    </svg>
+    <figcaption>Fig. 2 — Portfolio-wide trend direction. Note: trend_direction and trend_pct are excluded from modeling (§6) precisely because of the leakage risk they carry, even though they are informative to look at descriptively.</figcaption>
+  </figure>
+
+  <!-- 4. METHOD -->
+  <h2 id="method"><span class="n">4</span> Methodology</h2>
+  <h3><span class="n">4.1</span> Baseline rule</h3>
+  <p>A transparent, hand-written rule scores every item from 0–100 using three binary signals:</p>
+  <table>
+    <caption>Table 3 — Baseline rule composition</caption>
+    <tr><th>Signal</th><th>Definition</th><th class="num">Weight</th></tr>
+    <tr><td>Stale</td><td><code>days_since_last_update &ge; 180</code></td><td class="num">40</td></tr>
+    <tr><td>Visible</td><td><code>impressions_90d &ge; 500</code></td><td class="num">30</td></tr>
+    <tr><td>Low CTR</td><td><code>ctr &lt; 1</code></td><td class="num">30</td></tr>
+  </table>
+  <p>
+  <code>baseline_score = 40&times;stale + 30&times;visible + 30&times;low_ctr</code>. The score maps to
+  reason codes — <code>STALE_LOWCTR</code>, <code>STALE_VISIBLE</code>, <code>LOWCTR_VISIBLE</code>, or a
+  default <code>REVIEW_PRIORITY</code> — so every ranked item carries a human-readable explanation, not
+  just a number.
+  </p>
+  <div class="callout flag">
+    <span class="head">Consistency note</span>
+    The Week 7 action playbook uses a second, slightly different reason-code vocabulary
+    (<code>Healthy</code>, <code>Stale Content</code>, <code>Low CTR</code>,
+    <code>Stale + High Impressions + Low CTR</code>) rather than the Week 4 set above. Both describe the
+    same underlying score, but a reviewer-facing product should standardize on one vocabulary before
+    shipping — noted here as a concrete cleanup item rather than silently merged.
+  </div>
+
+  <h3><span class="n">4.2</span> Model</h3>
+  <p>
+  A <code>RandomForestClassifier</code> (100 trees, <code>random_state=42</code>) is trained on three
+  features — <code>days_since_last_update</code>, <code>impressions_90d</code>, and <code>ctr</code> — to
+  predict <code>high_priority</code> (<code>baseline_score &ge; 70</code>). Training the model on the same
+  inputs the rule itself uses lets the two approaches be compared apples-to-apples, using an 80/20 split
+  with a fixed random seed for reproducibility.
+  </p>
+
+  <h3><span class="n">4.3</span> Validation design</h3>
+  <p>
+  Because multiple content items in this dataset share a <code>client_id</code>, a plain random split
+  risks letting information about a client's typical behavior leak between the training and test sets. The
+  model is therefore evaluated twice: once under a standard random 80/20 split, and again under a
+  <strong>client-grouped split</strong> (<code>GroupShuffleSplit</code> on <code>client_id</code>), which
+  guarantees no client appears in both partitions.
+  </p>
+
+  <!-- 5. RESULTS -->
+  <h2 id="results"><span class="n">5</span> Results</h2>
+  <h3><span class="n">5.1</span> Model vs. baseline</h3>
+  <table>
+    <caption>Table 4 — Head-to-head comparison, same data, same split</caption>
+    <tr><th>Method</th><th>Description</th><th class="num">Accuracy</th></tr>
+    <tr><td>Week 4 rule baseline</td><td>Manual scoring rule</td><td class="num">N/A — not a predictive model</td></tr>
+    <tr><td>Random Forest (random split)</td><td>Learned model, 3 features</td><td class="num">1.00</td></tr>
+  </table>
+
+  <table>
+    <caption>Table 5 — Classification report, random 80/20 split (test n = 6,000)</caption>
+    <tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr>
+    <tr><td>0 — not high priority</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">5,976</td></tr>
+    <tr><td>1 — high priority</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">24</td></tr>
+  </table>
+
+  <figure>
+    <svg viewBox="0 0 460 220" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+      <text x="16" y="20" font-size="12" fill="#4B534F">CONFUSION MATRIX — test set, n = 6,000</text>
+      <g font-size="13">
+        <rect x="140" y="40" width="140" height="60" fill="#E4EEEC" stroke="#1F5D56"/>
+        <text x="210" y="75" text-anchor="middle" font-size="20" fill="#1F5D56" font-weight="600">5,976</text>
+        <rect x="280" y="40" width="140" height="60" fill="#FAFAF8" stroke="#DAD8D0"/>
+        <text x="350" y="75" text-anchor="middle" font-size="20" fill="#B7B4AA">0</text>
+        <rect x="140" y="100" width="140" height="60" fill="#FAFAF8" stroke="#DAD8D0"/>
+        <text x="210" y="135" text-anchor="middle" font-size="20" fill="#B7B4AA">0</text>
+        <rect x="280" y="100" width="140" height="60" fill="#E4EEEC" stroke="#1F5D56"/>
+        <text x="350" y="135" text-anchor="middle" font-size="20" fill="#1F5D56" font-weight="600">24</text>
+        <text x="210" y="30" text-anchor="middle" fill="#4B534F">pred: 0</text>
+        <text x="350" y="30" text-anchor="middle" fill="#4B534F">pred: 1</text>
+        <text x="60" y="75" text-anchor="middle" fill="#4B534F">actual: 0</text>
+        <text x="60" y="135" text-anchor="middle" fill="#4B534F">actual: 1</text>
+      </g>
+    </svg>
+    <figcaption>Fig. 3 — Zero misclassifications in either direction on this split.</figcaption>
+  </figure>
+
+  <h3><span class="n">5.2</span> Why the accuracy is 1.00 — and why that is not the headline finding</h3>
+  <div class="callout audit">
+    <span class="head">Circularity, not leakage from the future</span>
+    <code>high_priority</code> was <em>defined as</em> <code>baseline_score &ge; 70</code>, and
+    <code>baseline_score</code> is a deterministic function of the exact three columns
+    (<code>days_since_last_update</code>, <code>impressions_90d</code>, <code>ctr</code>) used as the
+    model's only features. A perfect classifier is therefore the expected outcome, not evidence of unusual
+    predictive skill — the Random Forest is recovering a fixed arithmetic rule from its own inputs, not
+    predicting an independent future event. This is <strong>circularity</strong>, distinct from temporal
+    leakage (using future information); it is disclosed here in full rather than presented as a headline
+    result <span class="tag tag-caution">CAUTION</span>.
+  </div>
+  <p>
+  Feature importances remain informative even under this caveat, because they show the model correctly
+  recovered the <em>relative</em> weighting baked into the rule, without being told the weights explicitly:
+  </p>
+  <table>
+    <caption>Table 6 — Random Forest feature importances</caption>
+    <tr><th>Feature</th><th class="num">Importance</th><th class="num">Rule weight</th></tr>
+    <tr><td>days_since_last_update</td><td class="num">0.867</td><td class="num">40 / 100</td></tr>
+    <tr><td>ctr</td><td class="num">0.105</td><td class="num">30 / 100</td></tr>
+    <tr><td>impressions_90d</td><td class="num">0.028</td><td class="num">30 / 100</td></tr>
+  </table>
+  <figure>
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+      <text x="16" y="20" font-size="12" fill="#4B534F">FEATURE IMPORTANCE (Random Forest)</text>
+      <g font-size="12" fill="#1B2321">
+        <text x="10" y="52">days_since_last_update</text>
+        <rect x="220" y="40" width="450" height="20" fill="#1F5D56"/>
+        <text x="680" y="55" text-anchor="end" fill="#F5F6F3">0.867</text>
+
+        <text x="10" y="82">ctr</text>
+        <rect x="220" y="70" width="54.6" height="20" fill="#3B6E4F"/>
+        <text x="285" y="85" fill="#4B534F">0.105</text>
+
+        <text x="10" y="112">impressions_90d</text>
+        <rect x="220" y="100" width="14.4" height="20" fill="#9C5A24"/>
+        <text x="245" y="115" fill="#4B534F">0.028</text>
+      </g>
+    </svg>
+    <figcaption>Fig. 4 — Staleness alone drives ~87% of the model's decisions, echoing its 40-point weight in the manual rule.</figcaption>
+  </figure>
+  <p>
+  Errors, where they occurred in earlier internal checks, clustered near the decision boundary (scores close
+  to 70), where the underlying signals were least distinct from one another — an intuitive result for a
+  rule with hard thresholds.
+  </p>
+
+  <h3><span class="n">5.3</span> Random split vs. client-grouped split</h3>
+  <table>
+    <caption>Table 7 — Validation robustness check</caption>
+    <tr><th>Validation split</th><th class="num">Accuracy</th></tr>
+    <tr><td>Random split (Week 5)</td><td class="num">1.00</td></tr>
+    <tr><td>Client-grouped split (Week 6)</td><td class="num">1.00</td></tr>
+  </table>
+  <p>
+  The two splits agree <span class="tag tag-observed">OBSERVED</span>, which is expected given the
+  circularity noted above — a deterministic rule reproduces identically regardless of which clients land
+  in the test fold. The grouped split is still worth reporting: it confirms the modeling
+  <em>pipeline</em> itself has no incidental client leakage, which will matter once (if) the target is
+  replaced with a genuinely independent outcome label.
+  </p>
+
+  <!-- 6. LEAKAGE -->
+  <h2 id="leakage"><span class="n">6</span> Leakage Audit</h2>
+  <table>
+    <caption>Table 8 — Final feature set reviewed for leakage risk</caption>
+    <tr><th>Feature</th><th>Used</th><th>Risk</th><th>Reason</th></tr>
+    <tr><td>days_since_last_update</td><td>Yes</td><td><span class="tag tag-observed">Low</span></td><td>Available before prediction</td></tr>
+    <tr><td>impressions_90d</td><td>Yes</td><td><span class="tag tag-observed">Low</span></td><td>Historical, trailing metric</td></tr>
+    <tr><td>ctr</td><td>Yes</td><td><span class="tag tag-observed">Low</span></td><td>Historical, trailing metric</td></tr>
+    <tr><td>client_id / content_id</td><td>No</td><td>Not used</td><td>Identifiers only</td></tr>
+    <tr><td>trend_direction / trend_pct</td><td>No</td><td><span class="tag tag-caution">High</span></td><td>May encode information derived from the same window as the label</td></tr>
+  </table>
+
+  <!-- 7. LIMITATIONS -->
+  <h2 id="limits"><span class="n">7</span> Limitations &amp; Honest Framing</h2>
+  <p>
+  This analysis identifies <strong>observed patterns</strong>, not causal relationships. A high refresh
+  score does not guarantee that updating a page will improve its performance. The results are decision
+  support for a human reviewer — never an automated publishing, deletion, or metadata-change trigger. This
+  work does not identify Google ranking factors, does not predict future search performance, and does not
+  establish that refreshing content causes a performance gain.
+  </p>
+  <ul>
+    <li><strong>Target circularity</strong> — the headline accuracy in §5 measures rule-recovery, not
+    prediction of an independent outcome (§5.2).</li>
+    <li><strong>Scope narrowed from the original framing</strong> — the Week 2 plan proposed a ranking
+    model evaluated with NDCG; the delivered system is a rule plus a classifier over that rule (§2).</li>
+    <li><strong>Two data assets, never reconciled</strong> — the Week 3 data contract audited the raw
+    daily warehouse table; all modeling runs on a separate anonymized snapshot (§3.1).</li>
+    <li><strong>Data contract's own grain claim was inaccurate</strong> and had to be corrected against the
+    schema; a duplicate-key issue in the raw warehouse table was found and not yet resolved (§3.2).</li>
+    <li><strong>Single snapshot, no time dimension</strong> — the modeling dataset is a point-in-time
+    extract; seasonal or temporary effects cannot be separated from durable ones.</li>
+    <li><strong>Missing values</strong> in fields such as <code>word_count</code> were observed in the raw
+    data but not imputed or modeled explicitly.</li>
+    <li><strong>Reason-code vocabularies are inconsistent</strong> between the Week 4 baseline and the
+    Week 7 playbook (§4.1) and should be unified before this becomes a shipped tool.</li>
+  </ul>
+  <h3>Claim rewrite exercise</h3>
+  <p>
+  As a discipline check, the boldest claim this project could make was deliberately rewritten into safer
+  language:
+  </p>
+  <div class="callout">
+    <span class="head">Before → after</span>
+    <em>Before:</em> "The Random Forest model accurately predicts high-priority content."<br>
+    <em>After:</em> "The Random Forest model reproduces the baseline scoring rule with high fidelity on
+    this dataset and may help operationalize that rule at scale; it should be used for decision support,
+    not as an independent predictor of future content performance."
+  </div>
+
+  <!-- 8. PLAYBOOK -->
+  <h2 id="playbook"><span class="n">8</span> Action Playbook</h2>
+  <h3><span class="n">8.1</span> Ranked action tiers</h3>
+  <table>
+    <caption>Table 9 — Score-to-action mapping</caption>
+    <tr><th class="num">Score</th><th>Action</th></tr>
+    <tr><td class="num">&ge; 70</td><td>Refresh Content</td></tr>
+    <tr><td class="num">40–69</td><td>Review Content</td></tr>
+    <tr><td class="num">&lt; 40</td><td>Monitor</td></tr>
+  </table>
+
+  <h3><span class="n">8.2</span> Top of the ranked queue (actual output)</h3>
+  <p>Every item at the maximum score of 100 triggers all three rule conditions simultaneously:</p>
+  <table>
+    <caption>Table 10 — Highest-priority items, ranked queue export</caption>
+    <tr><th>content_id</th><th class="num">Score</th><th>Action</th><th>Reason code</th></tr>
+    <tr><td class="mono">content_7f116ae1f6f5</td><td class="num">100</td><td>Refresh Content</td><td>Stale + High Impressions + Low CTR</td></tr>
+    <tr><td class="mono">content_fe16a55cd13d</td><td class="num">100</td><td>Refresh Content</td><td>Stale + High Impressions + Low CTR</td></tr>
+    <tr><td class="mono">content_1bfaa38ff26c</td><td class="num">100</td><td>Refresh Content</td><td>Stale + High Impressions + Low CTR</td></tr>
+    <tr><td class="mono">content_77d4d5930e5e</td><td class="num">100</td><td>Refresh Content</td><td>Stale + High Impressions + Low CTR</td></tr>
+    <tr><td class="mono">content_0a91db491d14</td><td class="num">100</td><td>Refresh Content</td><td>Stale + High Impressions + Low CTR</td></tr>
+  </table>
+
+  <figure>
+    <img src="work/figures/action_distribution.png" alt="Bar chart showing counts of content items assigned to Refresh Content, Review Content, and Monitor actions" style="width:100%; border:1px solid var(--rule);">
+    <figcaption>Fig. 5 — Full-portfolio action distribution, generated by <code>w07_action_playbook.ipynb</code>. Confirm this file is committed at <code>work/figures/action_distribution.png</code> before publishing — see §10.</figcaption>
+  </figure>
+
+  <h3><span class="n">8.3</span> Human review checklist</h3>
+  <p>Before acting on any recommendation, a reviewer confirms:</p>
+  <ul>
+    <li>Search intent still matches the page's topic.</li>
+    <li>Content is factually accurate and current.</li>
+    <li>Recent business priorities are reflected in the decision.</li>
+    <li>Important pages are not removed or deprioritized by accident.</li>
+  </ul>
+  <h3>No-go list — never automated</h3>
+  <ul>
+    <li>Publishing new content</li>
+    <li>Deleting pages</li>
+    <li>Rewriting content</li>
+    <li>Changing SEO metadata</li>
+    <li>Making business decisions without human approval</li>
+  </ul>
+  <h3><span class="n">8.4</span> Monitoring / retrain triggers</h3>
+  <p>The scoring system should be revisited if any of the following occur:</p>
+  <ul>
+    <li>CTR shifts substantially across the portfolio.</li>
+    <li>Search rankings move materially.</li>
+    <li>New content types are introduced that the rule wasn't designed for.</li>
+    <li>Performance on fresh data degrades.</li>
+    <li>Business priorities change.</li>
+  </ul>
+
+  <!-- 9. LOG -->
+  <h2 id="log"><span class="n">9</span> Weekly Development Log</h2>
+  <div class="weekgrid">
+    <div class="weekrow"><div class="wk">W01</div><div class="name">Research Question</div><div class="desc">Selected Lane 2 (Refresh / Content Opportunity Scoring); framed the decision, actor, and cost of a wrong call.</div></div>
+    <div class="weekrow"><div class="wk">W02</div><div class="name">ML Task Framing</div><div class="desc">Framed the lane as a ranking task with NDCG as the target metric; defined engagement score as a proxy target.</div></div>
+    <div class="weekrow"><div class="wk">W03</div><div class="name">Data Contract</div><div class="desc">Audited the raw daily performance warehouse (11.69M rows); verified grain, time window, and field categories with queries.</div></div>
+    <div class="weekrow"><div class="wk">W04</div><div class="name">Baseline Score</div><div class="desc">Built the rule-based baseline_score (0–100) and reason codes; reviewed the top 20 and checked for leaked fields.</div></div>
+    <div class="weekrow"><div class="wk">W05</div><div class="name">Capstone Model</div><div class="desc">Trained a Random Forest to reproduce the baseline rule; compared accuracy and inspected feature importances.</div></div>
+    <div class="weekrow"><div class="wk">W06</div><div class="name">Validation Audit</div><div class="desc">Re-ran the model under a client-grouped split; audited the final feature set for leakage; rewrote an overclaim into safer language.</div></div>
+    <div class="weekrow"><div class="wk">W07</div><div class="name">Action Playbook</div><div class="desc">Converted scores into a three-tier action queue with reason codes; documented human-review and no-go rules; exported the queue and a distribution chart.</div></div>
+  </div>
+
+  <!-- 10. REPRO -->
+  <h2 id="repro"><span class="n">10</span> Reproducibility</h2>
+  <p>
+  All seven notebooks are available in the project repository under <code>work/notebooks/</code>:
+  <a href="https://github.com/JaswanthhKumar22/flyrank-ml-internship">github.com/JaswanthhKumar22/flyrank-ml-internship</a>.
+  </p>
+  <p>Before publishing this paper, confirm:</p>
+  <ul>
+    <li><code>work/figures/action_distribution.png</code> exists and is committed (produced by the plotting cell in <code>w07_action_playbook.ipynb</code>).</li>
+    <li><code>work/outputs/baseline_action_score.csv</code> and <code>work/outputs/content_action_queue.csv</code> are committed.</li>
+    <li>All 7 notebooks plus this paper are present in the repository.</li>
+    <li><code>submission/paper_url.txt</code> contains exactly one line: this page's deployed URL.</li>
+  </ul>
+
+  <!-- 11. ETHICS -->
+  <h2 id="ethics"><span class="n">11</span> Data Ethics &amp; Use</h2>
+  <p>
+  No client names, domains, URLs, or private query text appear anywhere in this paper or the underlying
+  repository. All identifiers (<code>client_id</code>, <code>content_id</code>) are anonymized hashes used
+  only to group rows, never displayed or interpreted as real-world entities. The dataset is used under the
+  FlyRank internship's public-use terms.
+  </p>
+
+  <!-- 12. CONCLUSION -->
+  <h2 id="conclusion"><span class="n">12</span> Conclusion</h2>
+  <p>
+  This project delivers a transparent, reason-coded action queue that ranks a 30,000-item content
+  portfolio for editorial review, built from a hand-written baseline rule and a Random Forest model that
+  reproduces it with high fidelity under two independent validation splits. The honest headline is not the
+  1.00 accuracy figure — which reflects a circular target definition — but that the model's learned
+  feature weighting matches the manual rule's own design almost exactly, and that the resulting queue,
+  with its reason codes and human-review checklist, is a workable decision-support tool as long as the
+  no-go list in §8.3 is respected. The clearest next step is replacing <code>high_priority</code> with an
+  independent, forward-looking outcome (e.g., a measured traffic or engagement change following an actual
+  refresh) so the model's accuracy claim stops being definitional and starts being predictive.
+  </p>
+
+  <footer>
+    Built on the FlyRank ML Internship dataset — <a href="https://flyrank.ai">flyrank.ai</a>
+  </footer>
+
+  <hr class="div">
+
+  <!-- APPENDIX A -->
+  <h2 id="appendix-a"><span class="n">A</span> Appendix — Full Feature Dictionary</h2>
+  <p>All 44 columns in the anonymized modeling snapshot, grouped by category:</p>
+  <table>
+    <caption>Identifiers</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">content_id, client_id</td><td>Anonymized hashes; excluded from modeling as identifiers.</td></tr>
+  </table>
+  <table>
+    <caption>Content descriptors</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">search_volume, competition, competition_level, cpc, content_type, main_intent, word_count, char_count, provider_used, model_used, word_count_tier, char_count_tier</td><td>Static or slow-changing content and keyword attributes.</td></tr>
+  </table>
+  <table>
+    <caption>Engagement &amp; traffic (90-day window)</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">impressions_90d, clicks_90d, pageviews_90d, sessions_90d, users_90d, engaged_sessions_90d, ai_sessions_90d, scroll_events_90d, days_with_impressions, days_with_sessions</td><td>Used: impressions_90d. Rest available but unused in the current model.</td></tr>
+  </table>
+  <table>
+    <caption>Recent-window comparisons</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">impressions_last_30d, clicks_last_30d, sessions_last_30d, impressions_prev_30d, clicks_prev_30d, sessions_prev_30d</td><td>30-day vs. prior-30-day pairs; not used in the current model but available for a future trend feature.</td></tr>
+  </table>
+  <table>
+    <caption>Freshness &amp; age</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">content_age_days, age_tier, age_tier_order, days_since_last_update, freshness_tier</td><td>Used: days_since_last_update — the model's single most important feature.</td></tr>
+  </table>
+  <table>
+    <caption>Derived ratios &amp; tiers</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">ctr, avg_position, engagement_rate, scroll_rate, ai_traffic_pct, impression_tier, position_tier</td><td>Used: ctr. Rest are candidate features for a future iteration.</td></tr>
+  </table>
+  <table>
+    <caption>Trend fields — excluded (leakage risk)</caption>
+    <tr><th>Field</th><th>Notes</th></tr>
+    <tr><td class="mono">trend_direction, trend_pct</td><td>Descriptively reported in Fig. 2 but excluded from all modeling per the leakage audit (§6).</td></tr>
+  </table>
+
+  <!-- APPENDIX B -->
+  <h2 id="appendix-b"><span class="n">B</span> Appendix — Environment</h2>
+  <table>
+    <tr><th>Component</th><th>Detail</th></tr>
+    <tr><td>Language</td><td>Python 3 (Google Colab)</td></tr>
+    <tr><td>Core libraries</td><td class="mono">pandas, numpy, scikit-learn, matplotlib, duckdb, huggingface_hub</td></tr>
+    <tr><td>Model</td><td class="mono">sklearn.ensemble.RandomForestClassifier(n_estimators=100, random_state=42)</td></tr>
+    <tr><td>Split methods</td><td class="mono">train_test_split, GroupShuffleSplit</td></tr>
+    <tr><td>Raw warehouse access</td><td>DuckDB reading Parquet directly from a Hugging Face dataset repo via a scoped HF token</td></tr>
+  </table>
+
 </div>
-
-<p>Feature importances from the Random Forest:</p>
-<table>
-<tr><th>Feature</th><th>Importance</th></tr>
-<tr><td>days_since_last_update</td><td>0.867</td></tr>
-<tr><td>ctr</td><td>0.105</td></tr>
-<tr><td>impressions_90d</td><td>0.028</td></tr>
-</table>
-<p>
-Content staleness dominates the model's decisions, consistent with its 40-point weight in the manual
-baseline rule. Errors, where they occurred, clustered near the decision boundary (scores close to 70),
-where the underlying signals were less distinct.
-</p>
-
-<p>Distribution of recommended actions across the full dataset:</p>
-<img src="work/figures/action_distribution.png" alt="Bar chart showing counts of content items assigned to Refresh Content, Review Content, and Monitor actions">
-
-<h2>Limitations &amp; honest framing</h2>
-<p>
-This analysis identifies <strong>observed patterns</strong>, not causal relationships. A high refresh
-score does not guarantee that updating a page will improve its performance. The results should be used as
-<strong>decision support</strong> alongside human review — never as an automated publishing, deletion, or
-metadata-change trigger. This work does not claim to identify Google ranking factors, does not predict
-future search performance, and does not establish that refreshing content causes performance gains.
-</p>
-<p>
-Additional limits:
-</p>
-<ul>
-  <li>The evaluation window covers a single dataset snapshot; seasonal or temporary effects are not
-  separated out.</li>
-  <li>The <code>high_priority</code> label is a proxy derived from the baseline rule, not an independent
-  outcome measure (see Results note above).</li>
-  <li>Missing values in fields like <code>word_count</code> were not imputed or modeled explicitly.</li>
-  <li>Recommendations reflect the state of the data at pull time; recently updated content may not yet be
-  reflected.</li>
-</ul>
-
-<h2>Ranked recommendations</h2>
-<p>
-The action playbook maps <code>baseline_score</code> to three tiers:
-</p>
-<table>
-<tr><th>Score</th><th>Action</th></tr>
-<tr><td>≥ 70</td><td>Refresh Content</td></tr>
-<tr><td>40–69</td><td>Review Content</td></tr>
-<tr><td>&lt; 40</td><td>Monitor</td></tr>
-</table>
-<p>
-Each item also carries a reason code (<code>Stale Content</code>, <code>Low CTR</code>,
-<code>Stale + High Impressions + Low CTR</code>, or <code>Healthy Performance</code>) so reviewers can see
-<em>why</em> an item was flagged, not just that it was.
-</p>
-
-<h3>Human review checklist</h3>
-<p>Before acting on any recommendation, a reviewer should verify:</p>
-<ul>
-  <li>Search intent still matches the topic.</li>
-  <li>Content is factually accurate.</li>
-  <li>Recent business priorities are considered.</li>
-  <li>Important pages are not removed accidentally.</li>
-</ul>
-
-<h3>No-go list — never automated</h3>
-<ul>
-  <li>Publishing new content</li>
-  <li>Deleting pages</li>
-  <li>Rewriting content</li>
-  <li>Changing SEO metadata</li>
-  <li>Making business decisions without human approval</li>
-</ul>
-
-<h3>Monitoring / retrain triggers</h3>
-<p>The scoring system should be revisited if:</p>
-<ul>
-  <li>CTR changes substantially across the portfolio.</li>
-  <li>Search rankings shift materially.</li>
-  <li>New content types are introduced.</li>
-  <li>Model performance on fresh data decreases.</li>
-  <li>Business priorities change.</li>
-</ul>
-
-<h2>Reproducibility</h2>
-<p>
-All notebooks (research question, ML task framing, data contract, baseline scoring, modeling, validation
-audit, and action playbook) are available in the project repository:
-<a href="https://github.com/JaswanthhKumar22/flyrank-ml-internship">github.com/JaswanthhKumar22/flyrank-ml-internship</a>,
-under <code>work/notebooks/</code>.
-</p>
-
-<footer>
-<p>Built on the FlyRank ML Internship dataset — <a href="https://flyrank.ai">flyrank.ai</a></p>
-</footer>
-
 </body>
 </html>
