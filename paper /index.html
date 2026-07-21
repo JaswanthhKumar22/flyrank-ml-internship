@@ -1,1 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Refresh Opportunity Scoring</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+
+        <nav class="navbar">
+
+            <div class="logo">
+                FlyRank ML Capstone
+            </div>
+
+            <ul>
+
+                <li><a href="#abstract">Abstract</a></li>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#dataset">Dataset</a></li>
+                <li><a href="#methodology">Methodology</a></li>
+                <li><a href="#results">Results</a></li>
+                <li><a href="#recommendations">Recommendations</a></li>
+
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <section class="hero">
+
+        <h1>
+            Content Refresh Opportunity Scoring Using Search Performance Signals
+        </h1>
+
+        <p>
+
+            Machine Learning Capstone
+
+            <br>
+
+            FlyRank ML Internship
+
+        </p>
+
+    </section>
+
+    <section id="abstract">
+
+        <h2>Abstract</h2>
+
+        <p>
+
+            This study investigates how search performance signals can be used to identify content that should be prioritized for manual review and refresh. A rule-based baseline scoring approach was developed using content freshness, impressions, and click-through rate, followed by a Random Forest model evaluated with grouped validation to reduce data leakage. The resulting recommendations are presented as a ranked action queue intended to support editorial decision-making. The findings are observational and designed for decision-support rather than automated publishing.
+
+        </p>
+
+    </section>
+
+    <section id="introduction">
+
+        <h2>Introduction</h2>
+
+        <p>
+
+            Content performance naturally changes over time. Older pages may lose visibility, while refreshed content can regain search performance. This project explores how machine learning can help prioritize content review using historical search performance signals. The objective is to provide a practical workflow that supports human reviewers in identifying high-priority content for refresh.
+
+        </p>
+
+    </section>
+
+    <section id="dataset">
+
+        <h2>Dataset</h2>
+
+        <p>
+
+            The project uses the FlyRank ML Internship dataset containing anonymized search performance information. Features include content age, impressions, click-through rate (CTR), and additional search metrics. No client-identifying information or private search queries are included in this public report.
+
+        </p>
+
+    </section>
+
+    <section id="methodology">
+
+        <h2>Methodology</h2>
+
+        <ul>
+
+            <li>Baseline rule-based scoring</li>
+
+            <li>Random Forest classification model</li>
+
+            <li>Grouped validation using client identifiers</li>
+
+            <li>Feature leakage audit</li>
+
+            <li>Content action playbook generation</li>
+
+        </ul>
+
+    </section>
+
+    <section id="results">
+
+        <h2>Results</h2>
+
+        <p>
+
+            This section presents the comparison between the baseline approach and the machine learning model. Figures generated during the notebooks will be added here, including action distribution and model evaluation charts.
+
+        </p>
+
+    </section>
+
+    <section id="recommendations">
+
+        <h2>Recommendations</h2>
+
+        <ul>
+
+            <li>Refresh high-priority content identified by the model.</li>
+
+            <li>Review medium-priority content before publication decisions.</li>
+
+            <li>Continue monitoring healthy content.</li>
+
+            <li>Require human review before implementing any recommendation.</li>
+
+        </ul>
+
+    </section>
+
+    <section>
+
+        <h2>Limitations</h2>
+
+        <p>
+
+            The recommendations are based on historical observations from the available dataset. They should be interpreted as decision-support rather than proof of causation. Editorial review remains essential before any content changes are made.
+
+        </p>
+
+    </section>
+
+    <section>
+
+        <h2>Reproducibility</h2>
+
+        <p>
+
+            All notebooks, code, and supporting materials are available in the associated GitHub repository.
+
+        </p>
+
+    </section>
+
+    <section>
+
+        <h2>Acknowledgements</h2>
+
+        <p>
+
+            Built on the FlyRank ML Internship dataset.
+
+        </p>
+
+    </section>
+
+    <footer>
+
+        <p>
+
+            © 2026 Pandiri Jaswanth Kumar
+
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
