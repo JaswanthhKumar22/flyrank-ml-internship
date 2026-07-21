@@ -202,3 +202,35 @@ padding:30px;
 }
 
 }
+
+/* Scroll Animation */
+
+.hidden{
+
+    opacity:0;
+
+    transform:translateY(40px);
+
+    transition:all .8s ease;
+
+}
+
+.show{
+
+    opacity:1;
+
+    transform:translateY(0);
+
+}
+
+/* Active Navigation */
+
+.navbar a.active{
+
+    color:#1A73B8;
+
+    border-bottom:2px solid #1A73B8;
+
+    padding-bottom:4px;
+
+}
